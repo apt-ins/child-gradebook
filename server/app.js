@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openStore } from './store.js';
 import { readSecurityConfig, cookieSecure } from './security.js';
-import {createHASessions} from './ha-auth.js';
+import {createPasswordSessions} from './password-auth.js';
 import { EXAM_TYPES, getExamType } from '../shared/exam-types.js';
 const MAX_BACKUP=200*1024*1024, MAX_EXPANDED=300*1024*1024;
 const uid = () => crypto.randomUUID();
@@ -31,10 +31,9 @@ export function validateExam(v){
   if(typeof v.note!=='string'||v.note.length>3000)fail('小记不能超过 3000 个字');
   return {id:v.id,title:text(v.title,80,'考试名称'),date,grade:text(v.grade,24,'年级'),term:text(v.term,40,'学期'),scores,note:v.note.trim(),...ranks,...(v.examType===undefined?{}:{examType:v.examType})};
 }
-export async function createApp({dataDir,haVerifier,haSessionOptions,security=readSecurityConfig(),distDir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../dist')}={}){
+export async function createApp({dataDir,security=readSecurityConfig(),distDir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../dist')}={}){
   const store=await openStore(dataDir), {db,all,get,set,transaction}=store;
-  if(get('password')||all('SELECT token FROM sessions').length)transaction(()=>{db.run("DELETE FROM settings WHERE key='password'");db.run('DELETE FROM sessions');});
-  const haSessions=createHASessions(security,haVerifier,haSessionOptions);
+  const sessions=createPasswordSessions(store,security);
   const photoDir=path.join(dataDir,'photos'), stagingDir=path.join(dataDir,'staging');
   fs.mkdirSync(photoDir,{recursive:true,mode:0o700});fs.mkdirSync(stagingDir,{recursive:true,mode:0o700});
   // Staging contains only unconfirmed restore packages; discard them after restart.
@@ -44,20 +43,16 @@ export async function createApp({dataDir,haVerifier,haSessionOptions,security=re
   if(security.trustedProxies.length)app.set('trust proxy',security.trustedProxies);
   app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","blob:","data:"],connectSrc:["'self'"],objectSrc:["'none'"],upgradeInsecureRequests:null,frameAncestors:["'self'",...security.frameAncestors]}},xFrameOptions:security.frameAncestors.length?false:{action:'sameorigin'},strictTransportSecurity:false,crossOriginEmbedderPolicy:false}));
   app.use('/api',(_req,res,next)=>{res.set('Cache-Control','no-store');next();});
-  app.use('/api/ha/session',(req,res,next)=>{
-    const origin=req.get('Origin');if(!origin||!security.frameAncestors.includes(origin))return next(Object.assign(new Error('不允许此 HA 来源'),{status:403}));
-    res.set({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Credentials':'true','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-Requested-With'});res.vary('Origin');
-    if(req.method==='OPTIONS')return res.sendStatus(204);next();
-  });
-  app.use('/api',(req,_res,next)=>{if(!['GET','HEAD','OPTIONS'].includes(req.method)) {if(req.get('X-Requested-With')!=='gradebook')return next(Object.assign(new Error('请求来源无效，请刷新页面重试'),{status:403}));const origin=req.get('Origin');if(req.get('Sec-Fetch-Site')==='cross-site'||(origin&&new URL(origin).host!==req.get('host')&&!(req.path==='/ha/session'&&security.frameAncestors.includes(origin))))return next(Object.assign(new Error('不允许跨站请求'),{status:403}));}next();});
+  app.use('/api',(req,_res,next)=>{if(!['GET','HEAD','OPTIONS'].includes(req.method)){if(req.get('X-Requested-With')!=='gradebook')return next(Object.assign(new Error('请求来源无效，请刷新页面重试'),{status:403}));const origin=req.get('Origin');try{if(req.get('Sec-Fetch-Site')==='cross-site'||(origin&&new URL(origin).host!==req.get('host')))return next(Object.assign(new Error('不允许跨站请求'),{status:403}));}catch{return next(Object.assign(new Error('请求来源无效'),{status:403}));}}next();});
   app.use(express.json({limit:'2mb'}));
-  const authLimit=rateLimit({windowMs:60000,limit:60,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'连接次数较多，请稍后重试。'}});
+  const authLimit=rateLimit({windowMs:60000,limit:10,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'尝试次数过多，请稍后重试。'}});
   app.get('/api/health',(_req,res)=>res.json({ok:true}));
-  app.post('/api/ha/session',authLimit,async(req,res)=>{const token=/^Bearer (.+)$/.exec(req.get('Authorization')||'')?.[1];await haSessions.create(req,res,token);res.json({ok:true,mode:'ha'});});
-  for(const endpoint of ['setup','login','password'])app.post('/api/'+endpoint,(_req,res)=>res.status(410).json({error:'成绩册独立账号已停用，请通过 HA 进入。'}));
-  app.get('/api/auth',async(req,res)=>{try{res.json({mode:'ha',authenticated:!!await haSessions.authenticate(req)});}catch(e){if(e.status===401||e.status===403)return res.json({mode:'ha',authenticated:false,error:e.message});throw e;}});
-  app.use('/api',async(req,_res,next)=>{try{const user=await haSessions.authenticate(req);if(!user)throw Object.assign(new Error('请通过 HA 进入成绩册。'),{status:401});req.haUser=user;next();}catch(e){next(e);}});
-  app.post('/api/logout',(req,res)=>{haSessions.clear(req,res);res.json({ok:true});});
+  app.get('/api/auth',(req,res)=>res.json({configured:!!get('password'),authenticated:!!sessions.authenticate(req)}));
+  app.post('/api/setup',authLimit,async(req,res)=>{await sessions.setup(req.body?.password);sessions.create(req,res);res.json({ok:true});});
+  app.post('/api/login',authLimit,async(req,res)=>{await sessions.login(req.body?.password);sessions.create(req,res);res.json({ok:true});});
+  app.use('/api',(req,_res,next)=>{const session=sessions.authenticate(req);if(!session)return next(Object.assign(new Error('请先登录。'),{status:401}));req.user=session;next();});
+  app.post('/api/logout',(req,res)=>{sessions.clear(req,res);res.json({ok:true});});
+  app.post('/api/password',authLimit,async(req,res)=>{await sessions.change(req.body?.currentPassword,req.body?.newPassword);sessions.create(req,res);res.json({ok:true});});
   const exams=()=>all('SELECT payload FROM exams').map(r=>JSON.parse(r.payload)).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
   const photos=()=>all('SELECT id,exam_id AS examId,filename,label FROM photos');
   const snapshot=()=>({version:1,createdAt:new Date().toISOString(),profile:get('profile'),exams:exams(),photos:photos()});
@@ -98,9 +93,9 @@ export async function createApp({dataDir,haVerifier,haSessionOptions,security=re
     return {zip,data:{version:1,profile:p,exams:es,photos:ps}};
   }
   const backupUpload=multer({storage:multer.memoryStorage(),limits:{fileSize:MAX_BACKUP,files:1,parts:1}}).single('backup');
-  app.post('/api/restore/preview',backupUpload,(req,res)=>{if(!req.file)fail('请选择备份 ZIP 文件');const {data}=readBackup(req.file.buffer);for(const [t,p] of previews){if(p.expires<Date.now()||p.owner===req.haUser.id){fs.rmSync(p.file,{force:true});previews.delete(t);}}const token=uid(),file=path.join(stagingDir,token+'.zip');fs.writeFileSync(file,req.file.buffer,{mode:0o600});previews.set(token,{file,owner:req.haUser.id,expires:Date.now()+15*60000});res.json({token,nickname:data.profile.nickname,exams:data.exams.length,photos:data.photos.length});});
+  app.post('/api/restore/preview',backupUpload,(req,res)=>{if(!req.file)fail('请选择备份 ZIP 文件');const {data}=readBackup(req.file.buffer);for(const [t,p] of previews){if(p.expires<Date.now()||p.owner===req.user.id){fs.rmSync(p.file,{force:true});previews.delete(t);}}const token=uid(),file=path.join(stagingDir,token+'.zip');fs.writeFileSync(file,req.file.buffer,{mode:0o600});previews.set(token,{file,owner:req.user.id,expires:Date.now()+15*60000});res.json({token,nickname:data.profile.nickname,exams:data.exams.length,photos:data.photos.length});});
   app.post('/api/restore/confirm',async(req,res)=>{
-    const preview=previews.get(req.body.token);if(!preview||preview.expires<Date.now()||preview.owner!==req.haUser.id)fail('备份预览已过期，请重新选择文件');
+    const preview=previews.get(req.body.token);if(!preview||preview.expires<Date.now()||preview.owner!==req.user.id)fail('备份预览已过期，请重新选择文件');
     if(req.body.confirm!=='替换现有记录')fail('请确认替换现有记录');
     // Consume once before asynchronous image validation, preventing double restore.
     previews.delete(req.body.token);

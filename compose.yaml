@@ -4,13 +4,11 @@ services:
     image: child-gradebook:local
     restart: unless-stopped
     ports:
-      - "${BIND_ADDRESS:-0.0.0.0}:${APP_PORT:-3082}:3000"
+      - "${BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3082}:3000"
     environment:
       NODE_ENV: production
       DATA_DIR: /app/data
-      HA_INTERNAL_URL: "${HA_INTERNAL_URL:?请在 .env 中设置 HA_INTERNAL_URL}"
       SECURE_COOKIE: "${SECURE_COOKIE:-auto}"
-      FRAME_ANCESTORS: "${FRAME_ANCESTORS:?请在 .env 中设置 FRAME_ANCESTORS}"
       TRUSTED_PROXY_CIDRS: "${TRUSTED_PROXY_CIDRS:-}"
       TZ: Asia/Shanghai
     volumes:
