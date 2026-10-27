@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./tests/browser',timeout:30000,use:{baseURL:'http://127.0.0.1:3084',headless:true,ignoreHTTPSErrors:true,launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:['--no-sandbox','--host-resolver-rules=MAP *.example.test 127.0.0.1, MAP nas.example.test 127.0.0.1','--no-proxy-server']}},webServer:{command:'node tests/browser-server.js',url:'http://127.0.0.1:3084/api/health',reuseExistingServer:false},workers:1,reporter:'list'});

@@ -1,0 +1,298 @@
+{
+  "profile": {
+    "nickname": "小禾",
+    "subjects": [
+      "语文",
+      "数学",
+      "英语",
+      "物理",
+      "化学",
+      "生物",
+      "道德与法治",
+      "历史",
+      "地理"
+    ]
+  },
+  "exams": [
+    {
+      "id": "fixture-4",
+      "title": "冬季期末考试",
+      "examType": "期末",
+      "date": "2027-01-15",
+      "grade": "初一",
+      "term": "2026–2027学年 上学期",
+      "scores": [
+        {
+          "subject": "语文",
+          "score": 98,
+          "max": 120
+        },
+        {
+          "subject": "数学",
+          "score": 101,
+          "max": 120
+        },
+        {
+          "subject": "英语",
+          "score": 104,
+          "max": 120
+        },
+        {
+          "subject": "物理",
+          "score": 98,
+          "max": 100
+        },
+        {
+          "subject": "化学",
+          "score": 100,
+          "max": 100
+        },
+        {
+          "subject": "生物",
+          "score": 100,
+          "max": 100
+        },
+        {
+          "subject": "道德与法治",
+          "score": 98,
+          "max": 100
+        },
+        {
+          "subject": "历史",
+          "score": 100,
+          "max": 100
+        },
+        {
+          "subject": "地理",
+          "score": 100,
+          "max": 100
+        }
+      ],
+      "classRank": 4,
+      "gradeRank": 29,
+      "note": "这次学会了把错题再做一遍。\n慢慢积累，认真会留下痕迹。"
+    },
+    {
+      "id": "fixture-3",
+      "title": "十二月月考",
+      "examType": "月考",
+      "date": "2026-12-11",
+      "grade": "初一",
+      "term": "2026–2027学年 上学期",
+      "scores": [
+        {
+          "subject": "语文",
+          "score": 93,
+          "max": 120
+        },
+        {
+          "subject": "数学",
+          "score": 96,
+          "max": 120
+        },
+        {
+          "subject": "英语",
+          "score": 99,
+          "max": 120
+        },
+        {
+          "subject": "物理",
+          "score": 93,
+          "max": 100
+        },
+        {
+          "subject": "化学",
+          "score": 96,
+          "max": 100
+        },
+        {
+          "subject": "生物",
+          "score": 99,
+          "max": 100
+        },
+        {
+          "subject": "道德与法治",
+          "score": 93,
+          "max": 100
+        },
+        {
+          "subject": "历史",
+          "score": 96,
+          "max": 100
+        },
+        {
+          "subject": "地理",
+          "score": 99,
+          "max": 100
+        }
+      ],
+      "classRank": 6,
+      "gradeRank": 38,
+      "note": ""
+    },
+    {
+      "id": "fixture-2",
+      "title": "秋季期中考试",
+      "examType": "期中",
+      "date": "2026-11-06",
+      "grade": "初一",
+      "term": "2026–2027学年 上学期",
+      "scores": [
+        {
+          "subject": "语文",
+          "score": 88,
+          "max": 120
+        },
+        {
+          "subject": "数学",
+          "score": 91,
+          "max": 120
+        },
+        {
+          "subject": "英语",
+          "score": 94,
+          "max": 120
+        },
+        {
+          "subject": "物理",
+          "score": 88,
+          "max": 100
+        },
+        {
+          "subject": "化学",
+          "score": 91,
+          "max": 100
+        },
+        {
+          "subject": "生物",
+          "score": 94,
+          "max": 100
+        },
+        {
+          "subject": "道德与法治",
+          "score": 88,
+          "max": 100
+        },
+        {
+          "subject": "历史",
+          "score": 91,
+          "max": 100
+        },
+        {
+          "subject": "地理",
+          "score": 94,
+          "max": 100
+        }
+      ],
+      "classRank": 8,
+      "gradeRank": 47,
+      "note": ""
+    },
+    {
+      "id": "fixture-1",
+      "title": "十月月考",
+      "examType": "月考",
+      "date": "2026-10-15",
+      "grade": "初一",
+      "term": "2026–2027学年 上学期",
+      "scores": [
+        {
+          "subject": "语文",
+          "score": 83,
+          "max": 120
+        },
+        {
+          "subject": "数学",
+          "score": 0,
+          "max": 120
+        },
+        {
+          "subject": "英语",
+          "score": 89,
+          "max": 120
+        },
+        {
+          "subject": "物理",
+          "score": 83,
+          "max": 100
+        },
+        {
+          "subject": "化学",
+          "score": 86,
+          "max": 100
+        },
+        {
+          "subject": "生物",
+          "score": 89,
+          "max": 100
+        },
+        {
+          "subject": "道德与法治",
+          "score": 83,
+          "max": 100
+        },
+        {
+          "subject": "历史",
+          "score": 86,
+          "max": 100
+        },
+        {
+          "subject": "地理",
+          "score": 89,
+          "max": 100
+        }
+      ],
+      "classRank": 10,
+      "gradeRank": 56,
+      "note": ""
+    },
+    {
+      "id": "fixture-0",
+      "title": "九月月考",
+      "examType": "月考",
+      "date": "2026-09-12",
+      "grade": "初一",
+      "term": "2026–2027学年 上学期",
+      "scores": [
+        {
+          "subject": "语文",
+          "score": 78,
+          "max": 120
+        },
+        {
+          "subject": "数学",
+          "score": 81,
+          "max": 120
+        },
+        {
+          "subject": "英语",
+          "score": 84,
+          "max": 120
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "legacy",
+      "title": "入学摸底测试",
+      "date": "2026-09-01",
+      "grade": "初一",
+      "term": "2026–2027学年 上学期",
+      "scores": [
+        {
+          "subject": "语文",
+          "score": 90.5,
+          "max": 120
+        }
+      ],
+      "note": ""
+    }
+  ],
+  "photos": [
+    {
+      "id": "sample-photo",
+      "examId": "fixture-4",
+      "label": "示例试卷"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+:root{font-family:"Gradebook D-DIN","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif}
+.journey{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.j-ha-connect{min-height:100dvh;max-width:440px;margin:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;gap:19px;text-align:center;color:#46556e}.j-ha-connect>svg{color:#1765f5}.j-ha-connect h1{font-size:26px;color:#18233d}.j-ha-connect p{font-size:13px;line-height:1.9}.j-ha-connect .j-text{font-size:12px}
+/* Touch and pointer focus are quiet; Tab navigation retains HA's visible focus. */
+:is(button,a):focus{outline:none;box-shadow:none}input:focus:not(:focus-visible),select:focus:not(:focus-visible),textarea:focus:not(:focus-visible){outline:none}
+.j-icon.j-close,.j-icon.j-close:is(:hover,:active,:focus,:focus-visible){border:0;background:transparent;box-shadow:none;outline:none;color:#4e79a8;border-radius:0;min-width:44px;min-height:44px;padding:10px}.j-icon.j-close svg{stroke-width:1.7}
+:root[data-ha-keyboard] :is(button,a,input,select,textarea):focus-visible{outline:2px solid #1765f5!important;outline-offset:3px;box-shadow:none!important}
+:root:not([data-ha-keyboard]) :is(button,a,input,select,textarea):focus-visible{outline:none}
+.j-header-actions>.j-icon{min-width:44px;min-height:44px}
+/* A continuous light page, with safe space inside the content rather than outside its surface. */
+html{height:100%;background:#f7f8fc}body,#app{min-height:100%;background:#f7f8fc}
+.journey{min-height:100vh;background:#f7f8fc;padding:var(--gb-safe-top,env(safe-area-inset-top,0px)) var(--gb-safe-right,env(safe-area-inset-right,0px)) var(--gb-safe-bottom,env(safe-area-inset-bottom,0px)) var(--gb-safe-left,env(safe-area-inset-left,0px))}
+.j-header{background:transparent;border:0;box-shadow:none}
+.j-main{padding-top:18px}.b-overview,.b-history{background:transparent;border:0;border-radius:0;box-shadow:none;padding-inline:0}
+.b-history{border-top:1px solid #e5eaf3;margin-top:12px;padding-top:20px}
+.j-record-form,.j-tools-layout,.j-lens-canvas,.j-compare-head,.j-compare-table{background:transparent;border-radius:0;box-shadow:none}
+.j-record-form{padding:20px 0 0;overflow:visible}.j-record-footer{background:#f7f8fc;padding-bottom:17px}
+.j-fields-two{grid-template-columns:repeat(2,minmax(0,1fr))}.j-fields-two>label{min-width:0}
+.j-record-form :is(input,select,textarea){box-sizing:border-box;min-width:0;max-width:100%;width:100%}
+.j-record-form input[type=date]{display:block;min-inline-size:0;inline-size:100%;max-inline-size:100%}
+.j-record-form input[type=date]::-webkit-date-and-time-value{text-align:left;min-width:0}
+html{scroll-padding-block:85px 110px}.j-record-form :is(input,select,textarea){scroll-margin-block:85px 110px}
+@media(max-width:650px){.j-main{padding:10px 18px 0}.b-overview{padding-top:12px;padding-bottom:10px}.b-history{padding:17px 0 14px}.j-header{padding-inline:18px}.j-record-form{padding:18px 0 0}.j-tools-layout{padding-inline:0}.j-workspace{padding-inline:0}.j-record-footer{padding-bottom:17px}}
+@media(max-width:600px){.j-exam-meta-fields{grid-template-columns:minmax(0,1fr);gap:0}.j-exam-meta-fields label{margin-top:18px}.j-exam-meta-fields :is(input,select){min-height:50px}}
