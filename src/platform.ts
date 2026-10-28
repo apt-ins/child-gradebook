@@ -8,10 +8,10 @@ export async function saveDownload(blob: Blob, name: string) {
   if (isLocalApp) {
     const { Capacitor } = await import("@capacitor/core");
     if (Capacitor.isNativePlatform()) {
-      const [{ Filesystem, Directory }, { Share }, { toBase64 }] =
+      const [{ Filesystem, Directory }, { registerPlugin }, { toBase64 }] =
         await Promise.all([
           import("@capacitor/filesystem"),
-          import("@capacitor/share"),
+          import("@capacitor/core"),
           import("./mobile/storage"),
         ]);
       const path =
@@ -22,15 +22,10 @@ export async function saveDownload(blob: Blob, name: string) {
         data: toBase64(new Uint8Array(await blob.arrayBuffer())),
         recursive: true,
       });
-      const { uri } = await Filesystem.getUri({
-        path,
-        directory: Directory.Cache,
-      });
-      await Share.share({
-        title: name,
-        url: uri,
-        dialogTitle: "保存或分享" + name,
-      });
+      const files = registerPlugin<{
+        save(options: { path: string }): Promise<{ cancelled: boolean }>;
+      }>("LocalFiles");
+      await files.save({ path });
       return;
     }
   }

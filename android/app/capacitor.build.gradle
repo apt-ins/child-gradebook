@@ -12,7 +12,6 @@ dependencies {
     implementation project(':capacitor-app')
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-preferences')
-    implementation project(':capacitor-share')
 
 }
 

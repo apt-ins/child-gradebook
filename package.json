@@ -9,18 +9,15 @@
     "start": "node server/index.js",
     "test": "node --test tests/*.test.js",
     "build:mobile": "VITE_LOCAL_APP=true vite build --outDir mobile/www",
-    "mobile:sync": "npm run build:mobile && cap sync",
-    "mobile:android": "npm run mobile:sync && cap open android",
-    "mobile:ios": "npm run mobile:sync && cap open ios"
+    "mobile:sync": "npm run build:mobile && cap sync android",
+    "mobile:android": "npm run mobile:sync && cap open android"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",
     "@capacitor/app": "8.1.2",
     "@capacitor/core": "8.5.3",
     "@capacitor/filesystem": "8.1.5",
-    "@capacitor/ios": "8.5.3",
     "@capacitor/preferences": "8.0.1",
-    "@capacitor/share": "8.0.3",
     "adm-zip": "^0.6.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",

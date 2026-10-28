@@ -5,11 +5,9 @@ const config: CapacitorConfig = {
   webDir: "mobile/www",
   backgroundColor: "#f5f8ff",
   android: { backgroundColor: "#f5f8ff", allowMixedContent: false },
-  ios: { backgroundColor: "#f5f8ff", contentInset: "automatic" },
   server: {
     hostname: "localhost",
     androidScheme: "https",
-    iosScheme: "capacitor",
   },
 };
 export default config;
