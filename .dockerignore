@@ -16,3 +16,5 @@ playwright-report
 *.pem
 *.key
 *.log
+
+artifacts/
