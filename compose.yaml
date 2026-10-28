@@ -1,7 +1,7 @@
 services:
   gradebook:
     build: .
-    image: child-gradebook:local
+    image: xueji-standalone:local
     restart: unless-stopped
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3082}:3000"

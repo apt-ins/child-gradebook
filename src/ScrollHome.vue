@@ -16,6 +16,17 @@ import {
   CalendarDays,
   NotebookPen,
   ChartNoAxesCombined,
+  Check,
+  Users,
+  ChartNoAxesColumnIncreasing,
+  BookOpen,
+  Calculator,
+  FlaskConical,
+  FlaskRound,
+  Leaf,
+  Landmark,
+  ScrollText,
+  Globe,
 } from "lucide-vue-next";
 import type { useJourney } from "./useJourney";
 import type { Exam } from "./types";
@@ -50,7 +61,6 @@ const {
   openPhoto,
   getExamType,
 } = props.journey;
-const timelineTrack = ref<HTMLElement | null>(null);
 const rm = matchMedia("(prefers-reduced-motion: reduce)"),
   reduced = ref(rm.matches);
 const reducedChanged = () => (reduced.value = rm.matches);
@@ -65,17 +75,36 @@ const range = ref("5"),
   activeDialog = ref<HTMLDialogElement | null>(null),
   limit = ref(20),
   focusId = ref("");
-const colors = [
-  "#6c9e99",
-  "#748fb2",
-  "#9a91bb",
-  "#779d94",
-  "#b5a078",
-  "#859cb2",
-  "#a28ca0",
-  "#739a9f",
-  "#a89b7f",
-];
+const subjectVisuals = {
+  语文: { icon: BookOpen, color: "#ec4e76" },
+  数学: { icon: Calculator, color: "#3978f6" },
+  英语: { icon: null, color: "#e47d24" },
+  物理: { icon: FlaskConical, color: "#249feb" },
+  化学: { icon: FlaskRound, color: "#20aa68" },
+  生物: { icon: Leaf, color: "#2ba45d" },
+  道德与法治: { icon: Landmark, color: "#e78c28" },
+  历史: { icon: ScrollText, color: "#e69532" },
+  地理: { icon: Globe, color: "#2e91d6" },
+};
+const subjectVisual = (name: string) => subjectVisuals[name as keyof typeof subjectVisuals] || { icon: BookOpen, color: "#6479a6" };
+const directoryTerm = ref("全部学期"), directoryType = ref("全部类型"), directoryQuery = ref("");
+const directoryExams = computed(() => exams.value.filter(e =>
+  (directoryTerm.value === "全部学期" || e.term === directoryTerm.value) &&
+  (directoryType.value === "全部类型" || (getExamType(e) || "未分类") === directoryType.value) &&
+  (!directoryQuery.value.trim() || [e.title, e.note, e.grade, e.term, ...e.scores.map(s => s.subject)].some(s => s.toLowerCase().includes(directoryQuery.value.trim().toLowerCase())))
+));
+const examTotal = (e: Exam) => e.scores.reduce((sum, s) => sum + s.score, 0);
+const examMaximum = (e: Exam) => e.scores.reduce((sum, s) => sum + s.max, 0);
+const termLabel = (e: Exam) => [e.grade, e.term.match(/上学期|下学期/)?.[0] || e.term].filter(Boolean).join(" · ");
+const directoryGroups = computed(() => {
+  const groups = new Map<string, {key: string; label: string; term: string; exams: Exam[]}>();
+  for (const e of directoryExams.value.slice(0, limit.value)) {
+    const key = `${e.grade}|${e.term}`;
+    if (!groups.has(key)) groups.set(key, {key, label: termLabel(e) || "未填写学期", term: e.term, exams: []});
+    groups.get(key)!.exams.push(e);
+  }
+  return [...groups.values()];
+});
 const score = (e: Exam | undefined, s: string) =>
   e?.scores.find((v) => v.subject === s);
 const examSubjects = computed(
@@ -112,7 +141,6 @@ const semesterLabel = computed(() =>
 );
 const previous = computed(() => timeline.value[currentIndex.value - 1]),
   next = computed(() => timeline.value[currentIndex.value + 1]);
-const listed = computed(() => filtered.value.slice(0, limit.value));
 const recent = computed(() =>
   range.value === "all" ? rows.value : rows.value.slice(-Number(range.value)),
 );
@@ -173,8 +201,7 @@ const change = computed(() => {
   return `${d > 0 ? "+" : ""}${fmt(d)} ${sameMax.value ? "分" : "个百分点"}`;
 });
 const firstDate = computed(() => exams.value.at(-1)?.date.slice(0, 4));
-const rate = computed(() => (maximum.value ? total.value / maximum.value : 0));
-watch([term, typeFilter, query], () => (limit.value = 20));
+watch([directoryTerm, directoryType, directoryQuery], () => (limit.value = 20));
 watch(subject, () => (focusId.value = ""));
 watch(view, (v) => {
   if (props.journey.screen.value === "voyage") {
@@ -183,50 +210,6 @@ watch(view, (v) => {
     history.replaceState(history.state, "", u.pathname + u.search);
   }
 });
-let trackObserver: ResizeObserver | undefined;
-async function centerTimeline() {
-  await nextTick();
-  const track = timelineTrack.value,
-    node = track?.querySelector<HTMLElement>("[aria-current=true]");
-  if (!track || !node) return;
-  if (matchMedia("(max-width:1000px)").matches)
-    track.scrollTo({
-      left:
-        track.scrollLeft +
-        node.getBoundingClientRect().left -
-        track.getBoundingClientRect().left -
-        track.clientWidth / 2 +
-        node.clientWidth / 2,
-      behavior: "instant",
-    });
-  else
-    track.scrollTo({
-      top:
-        track.scrollTop +
-        node.getBoundingClientRect().top -
-        track.getBoundingClientRect().top -
-        track.clientHeight / 2 +
-        node.clientHeight / 2,
-      behavior: "instant",
-    });
-}
-watch(
-  () => current.value?.id,
-  () => void centerTimeline(),
-  { flush: "post" },
-);
-watch(
-  timelineTrack,
-  (el) => {
-    trackObserver?.disconnect();
-    if (el) {
-      trackObserver = new ResizeObserver(() => void centerTimeline());
-      trackObserver.observe(el);
-      void centerTimeline();
-    }
-  },
-  { flush: "post" },
-);
 function selectExam(e: Exam) {
   pickExam(e.id);
 }
@@ -268,6 +251,13 @@ async function closeDialog() {
   returnFocus?.focus({ preventScroll: true });
   closing = false;
 }
+function openDirectory() {
+  directoryTerm.value = term.value;
+  directoryType.value = typeFilter.value;
+  directoryQuery.value = "";
+  limit.value = 20;
+  showDialog(directory.value);
+}
 async function showDetails(e: Exam) {
   detailExam.value = e;
   await nextTick();
@@ -283,8 +273,12 @@ async function edit(e: Exam) {
   await navigate("/record/" + e.id + "/edit");
 }
 async function choose(e: Exam) {
+  if (closing) return;
   await closeDialog();
+  term.value = directoryTerm.value;
+  typeFilter.value = directoryType.value;
   selectExam(e);
+  view.value = "exam";
 }
 function inspectPoint(event: PointerEvent) {
   const svg = event.currentTarget as SVGElement,
@@ -298,7 +292,6 @@ function inspectPoint(event: PointerEvent) {
 }
 onUnmounted(() => {
   rm.removeEventListener("change", reducedChanged);
-  trackObserver?.disconnect();
   if (activeDialog.value) {
     activeDialog.value.close();
     document.body.style.overflow = previousOverflow;
@@ -309,7 +302,7 @@ onUnmounted(() => {
   <div class="growth-scroll">
     <header class="gs-intro">
       <div>
-        <p class="xj-page-overline">
+        <p v-if="view === 'progress'" class="xj-page-overline">
           {{
             firstDate
               ? `从 ${firstDate} 开始，慢慢长大`
@@ -326,23 +319,15 @@ onUnmounted(() => {
         class="gs-record"
         :href="urlFor('/record/new')"
         @click.prevent="navigate('/record/new')"
-        ><Plus :size="18" aria-hidden="true" />记一场考试</a
+        ><Plus :size="18" aria-hidden="true" />记录考试</a
       >
     </header>
-    <div class="xj-section-heading">
+    <div v-if="view === 'progress'" class="xj-section-heading">
       <div>
         <h2>
-          {{
-            view === "exam"
-              ? "翻开一页，看看这次的认真"
-              : "把每一步，连成成长的模样"
-          }}
+          把每一步，连成成长的模样
         </h2>
-        <span>{{
-          view === "exam"
-            ? `${exams.length} 场考试，都是成长的印记`
-            : "不止看分数，也看一路走来的变化"
-        }}</span>
+        <span>不止看分数，也看一路走来的变化</span>
       </div>
       <div class="gs-semester">
         <label class="gs-semester-picker"
@@ -359,13 +344,13 @@ onUnmounted(() => {
             ><span>{{ semesterLabel }}</span
             ><ChevronDown :size="15" /></span></label
         ><button
-          aria-label="考试目录"
+          aria-label="考试总览"
           class="gs-directory-button"
-          @click="showDialog(directory)"
+          @click="openDirectory"
         >
           <Search :size="16" aria-hidden="true" /><span
             class="xj-directory-label"
-            >考试目录</span
+            >考试总览</span
           ><span>{{ exams.length }}</span>
         </button>
       </div>
@@ -384,137 +369,60 @@ onUnmounted(() => {
     >
       <section v-if="current" class="gs-exam" aria-label="本场考试成绩">
         <div class="gs-exam-context">
-          <div class="xj-summary-top">
-            <span class="xj-exam-badge">{{
-              getExamType(current) || "考试记录"
-            }}</span
-            ><span class="gs-current-mark"
-              >第 {{ currentIndex + 1 }} / {{ timeline.length }} 场记录</span
-            ><button
-              class="xj-summary-more"
-              aria-label="本场详情"
-              @click="showDetails(current)"
-            >
-              <ArrowUpRight :size="20" />
-            </button>
-          </div>
-          <div class="gs-exam-title">
-            <h2>{{ current.title }}</h2>
-            <p>
-              <CalendarDays :size="13" aria-hidden="true" />{{
-                date(current.date)
-              }}<span>{{ current.grade }}</span>
-            </p>
-            <small>{{ current.term }}</small>
-          </div>
+          <button class="xj-exam-switch" aria-label="切换考试，打开考试总览" @click="openDirectory">
+            <span class="xj-exam-calendar"><CalendarDays :size="24" /></span>
+            <div class="gs-exam-title">
+              <h2>{{ current.title }}</h2>
+              <p>{{ termLabel(current) }}<span>{{ date(current.date) }}</span></p>
+            </div>
+            <span class="xj-switch-label">切换考试<ChevronDown :size="18" /></span>
+          </button>
           <div class="xj-summary-bottom">
-            <div
-              class="gs-total gs-exam-total"
-              role="group"
-              aria-label="本场总分"
-            >
-              <span>本次总分</span>
-              <p>
-                <AnimatedNumber :value="total" /><small
-                  >/ {{ fmt(maximum) }}</small
-                >
-              </p>
+            <div class="gs-total gs-exam-total" role="group" aria-label="本场总分">
+              <span>总分 <small>（满分 {{ fmt(maximum) }}）</small></span>
+              <p><AnimatedNumber :value="total" /><small>/ {{ fmt(maximum) }}</small></p>
               <small>已录入 {{ current.scores.length }} 科合计</small>
             </div>
             <div class="gs-ranks">
               <div class="gs-class-rank">
-                <span>班级排名</span>
-                <p>
-                  <AnimatedNumber
-                    v-if="current.classRank"
-                    :value="current.classRank"
-                  /><strong v-else>—</strong
-                  ><small>{{ current.classRank ? "名" : "未记录" }}</small>
-                </p>
+                <span>班级排名<Users :size="19" aria-hidden="true" /></span>
+                <p><AnimatedNumber v-if="current.classRank" :value="current.classRank" /><strong v-else>—</strong><small>{{ current.classRank ? "名" : "未记录" }}</small></p>
               </div>
               <div class="gs-grade-rank">
-                <span>年级排名</span>
-                <p>
-                  <AnimatedNumber
-                    v-if="current.gradeRank"
-                    :value="current.gradeRank"
-                  /><strong v-else>—</strong
-                  ><small>{{ current.gradeRank ? "名" : "未记录" }}</small>
-                </p>
+                <span>年级排名<ChartNoAxesColumnIncreasing :size="19" aria-hidden="true" /></span>
+                <p><AnimatedNumber v-if="current.gradeRank" :value="current.gradeRank" /><strong v-else>—</strong><small>{{ current.gradeRank ? "名" : "未记录" }}</small></p>
               </div>
             </div>
           </div>
-          <svg class="xj-score-orbit" viewBox="0 0 200 200" aria-hidden="true">
-            <circle cx="100" cy="100" r="78" />
-            <circle
-              cx="100"
-              cy="100"
-              r="78"
-              :style="{
-                strokeDasharray: '490',
-                strokeDashoffset: 490 * (1 - rate),
-              }"
-            />
-            <path d="M84 104l12 12 25-31" />
-          </svg>
+          <nav class="xj-exam-navigation" aria-label="切换考试">
+            <button aria-label="上一场考试" :disabled="!previous" @click="previous && selectExam(previous)"><ChevronLeft :size="17" /><span>上一场</span></button>
+            <button aria-label="下一场考试" :disabled="!next" @click="next && selectExam(next)"><span>下一场</span><ChevronRight :size="17" /></button>
+          </nav>
         </div>
         <div class="gs-score-section">
           <header>
             <div>
-              <span class="xj-heading-mark"></span>
               <h3>{{ COPY.scoresHeading }}</h3>
             </div>
-            <span>点击科目，查看历次变化</span>
+            <a class="j-text gs-edit-link" aria-label="编辑记录" :href="urlFor('/record/' + current.id + '/edit')" @click.prevent="edit(current)"><Pencil :size="14" aria-hidden="true" />编辑</a>
           </header>
           <div class="gs-score-list">
-            <button
-              v-for="(s, i) in examSubjects"
-              :key="s"
-              class="gs-score-row"
-              :style="{ '--subject-color': colors[i % colors.length] }"
-              :aria-label="'查看' + s + COPY.growthTab"
-              @click="progress(s)"
-            >
-              <span class="gs-subject"
-                ><i>{{ s.slice(0, 1) }}</i
-                >{{ s }}</span
-              ><span class="gs-score-track" aria-hidden="true"
-                ><motion.i
-                  :initial="reduced ? false : { scaleX: 0 }"
-                  :animate="{
-                    scaleX: score(current, s)
-                      ? score(current, s)!.score / score(current, s)!.max
-                      : 0,
-                  }"
-                  :transition="
-                    reduced
-                      ? { duration: 0 }
-                      : {
-                          type: 'spring',
-                          stiffness: 130,
-                          damping: 24,
-                          delay: i * 0.025,
-                        }
-                  " /></span
-              ><span v-if="score(current, s)" class="gs-value"
-                ><AnimatedNumber :value="score(current, s)!.score" /><small
-                  >/ {{ fmt(score(current, s)!.max) }}</small
-                ></span
-              ><span v-else class="gs-value gs-missing">未录入</span
-              ><ChevronRight
-                :size="14"
-                class="gs-score-chevron"
-                aria-hidden="true"
-              />
+            <button v-for="s in examSubjects" :key="s" class="gs-score-row"
+              :class="{ 'gs-score-long': s.length > 4, 'gs-score-wide': score(current, s) && fmt(score(current, s)!.score).length > 5 }"
+              :style="{ '--subject-color': subjectVisual(s).color }"
+              :aria-label="'查看' + s + COPY.growthTab" @click="progress(s)">
+              <span class="gs-subject"><i aria-hidden="true">
+                <component :is="subjectVisual(s).icon" v-if="subjectVisual(s).icon" :size="20" />
+                <svg v-else viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial, sans-serif" font-size="15" font-weight="600">En</text></svg>
+              </i><span>{{ s }}</span></span>
+              <span v-if="score(current, s)" class="gs-value"><AnimatedNumber :value="score(current, s)!.score" /><small>/ {{ fmt(score(current, s)!.max) }}</small></span>
+              <span v-else class="gs-value gs-missing">未录入</span>
             </button>
+            <button v-if="photosFor(current.id).length" class="gs-screenshot-link" :aria-label="'成绩截图 · ' + photosFor(current.id).length + ' 张'" @click="showAttachments()"><Paperclip :size="16" aria-hidden="true" />查看成绩截图<ChevronRight :size="14" /></button>
+            <a v-else class="gs-screenshot-link" :href="urlFor('/record/' + current.id + '/edit')" @click.prevent="edit(current)"><Paperclip :size="16" aria-hidden="true" />添加成绩截图<ChevronRight :size="14" /></a>
           </div>
           <footer class="gs-score-footer">
             <a
-              class="j-text"
-              :href="urlFor('/record/' + current.id + '/edit')"
-              @click.prevent="edit(current)"
-              ><Pencil :size="14" aria-hidden="true" />编辑记录</a
-            ><a
               v-if="exams.length > 1"
               class="j-text"
               :href="urlFor('/compare')"
@@ -552,48 +460,7 @@ onUnmounted(() => {
           清除筛选
         </button>
       </div>
-      <aside class="gs-journey" aria-label="考试时间线">
-        <div class="xj-history-heading">
-          <h3>考试时光</h3>
-          <span>{{ timeline.length }} 次记录</span>
-        </div>
-        <div v-if="timeline.length" class="gs-time-layout">
-          <button
-            class="gs-time-arrow"
-            aria-label="上一场考试"
-            :disabled="!previous"
-            @click="previous && selectExam(previous)"
-          >
-            <ChevronLeft :size="18" />
-          </button>
-          <div
-            ref="timelineTrack"
-            class="gs-time-track"
-            role="group"
-            aria-label="选择考试"
-          >
-            <button
-              v-for="e in timeline"
-              :key="e.id"
-              class="gs-time-node"
-              :aria-current="current?.id === e.id ? 'true' : undefined"
-              :aria-label="e.title + ' ' + date(e.date)"
-              @click="selectExam(e)"
-            >
-              <span class="gs-node-dot"></span><small>{{ date(e.date) }}</small
-              ><strong>{{ e.title }}</strong
-              ><span class="xj-history-grade">{{ e.grade }}</span>
-            </button>
-          </div>
-          <button
-            class="gs-time-arrow"
-            aria-label="下一场考试"
-            :disabled="!next"
-            @click="next && selectExam(next)"
-          >
-            <ChevronRight :size="18" />
-          </button>
-        </div>
+      <aside class="gs-journey" aria-label="考试小记">
         <div v-if="current" class="xj-memory">
           <NotebookPen :size="20" aria-hidden="true" />
           <h3>留给未来的小记</h3>
@@ -603,23 +470,8 @@ onUnmounted(() => {
               "有些进步，分数没有说完。为这次考试留下一点回忆吧。"
             }}
           </p>
-          <button
-            v-if="photosFor(current.id).length"
-            class="gs-attachment"
-            @click="showAttachments()"
-          >
-            <Paperclip :size="16" aria-hidden="true" />成绩截图 ·
-            {{ photosFor(current.id).length }} 张<ChevronRight
-              :size="14"
-            /></button
-          ><a
-            v-else
-            class="gs-attachment gs-attachment-empty"
-            :href="urlFor('/record/' + current.id + '/edit')"
-            @click.prevent="edit(current)"
-            ><Paperclip :size="16" />添加成绩截图<span>选填</span></a
-          >
         </div>
+        <button v-if="current" class="xj-detail-link" @click="showDetails(current)" aria-label="本场详情">查看本场详情<ArrowUpRight :size="17" /></button>
       </aside>
     </motion.div>
     <motion.section
@@ -806,60 +658,30 @@ onUnmounted(() => {
         ><GitCompareArrows :size="17" />选择两场考试对照</a
       ></motion.section
     >
-    <dialog
-      ref="directory"
-      class="j-dialog gs-directory"
-      aria-labelledby="gs-directory-title"
-      @cancel.prevent="closeDialog"
-      @close="closeDialog"
-    >
+    <dialog ref="directory" class="j-dialog gs-directory" aria-labelledby="gs-directory-title" @cancel.prevent="closeDialog" @close="closeDialog">
       <header>
-        <div>
-          <h2 id="gs-directory-title">考试目录</h2>
-          <p>{{ filtered.length }} 场记录，按时间倒序</p>
-        </div>
-        <button
-          class="j-icon j-close"
-          aria-label="关闭考试目录"
-          @click="closeDialog"
-        >
-          <X :size="22" />
-        </button>
+        <div><h2 id="gs-directory-title">考试总览</h2><p>{{ directoryExams.length }} 场记录 · 按学期回看每一次考试</p></div>
+        <button class="j-icon j-close" aria-label="关闭考试总览" @click="closeDialog"><X :size="24" /></button>
       </header>
       <div class="gs-directory-filters">
-        <input
-          v-model="query"
-          aria-label="搜索考试"
-          placeholder="搜索考试、科目或小记"
-        /><select v-model="typeFilter" aria-label="筛选考试类型">
-          <option>全部类型</option>
-          <option v-for="t in [...EXAM_TYPES, '未分类']" :key="t">
-            {{ t }}
-          </option>
-        </select>
+        <label class="xj-library-search"><Search :size="18" aria-hidden="true" /><input v-model="directoryQuery" aria-label="搜索考试" placeholder="搜索考试、科目或小记" /></label>
+        <select v-model="directoryTerm" aria-label="总览筛选学期"><option value="全部学期">全部学期</option><option v-for="o in semesterOptions" :key="o.value" :value="o.value">{{ o.label }}</option></select>
+        <select v-model="directoryType" aria-label="筛选考试类型"><option>全部类型</option><option v-for="t in [...EXAM_TYPES, '未分类']" :key="t">{{ t }}</option></select>
       </div>
-      <div class="gs-directory-list">
-        <button
-          v-for="e in listed"
-          :key="e.id"
-          :aria-current="e.id === current?.id ? 'true' : undefined"
-          @click="choose(e)"
-        >
-          <span>{{ date(e.date) }}</span>
-          <div>
-            <strong>{{ e.title }}</strong
-            ><small>{{ e.term }} · {{ e.grade }}</small>
+      <div class="xj-library-body gs-directory-list">
+        <details v-for="g in directoryGroups" :key="g.key" class="xj-library-group" open>
+          <summary><div><h3>{{ g.label }}</h3><small>{{ g.term }}</small></div><span>{{ g.exams.length }} 场<ChevronDown :size="17" /></span></summary>
+          <div class="xj-library-grid">
+            <button v-for="e in g.exams" :key="e.id" class="xj-exam-tile" :aria-current="e.id === current?.id ? 'true' : undefined" :aria-label="e.title + ' ' + date(e.date)" @click="choose(e)">
+              <div class="xj-tile-top"><strong>{{ e.title }}</strong><span v-if="e.id === current?.id" class="xj-tile-check"><Check :size="15" /></span></div>
+              <time :datetime="e.date">{{ date(e.date) }}</time>
+              <div class="xj-tile-total"><span>总分</span><b>{{ fmt(examTotal(e)) }}</b><small>/ {{ fmt(examMaximum(e)) }}</small></div>
+              <div class="xj-tile-ranks"><span>班级 <b>{{ e.classRank ?? '—' }}</b></span><span>年级 <b>{{ e.gradeRank ?? '—' }}</b></span></div>
+            </button>
           </div>
-          <ChevronRight :size="18" />
-        </button>
-        <p v-if="!listed.length">没有匹配的考试，试试其他关键词。</p>
-        <button
-          v-if="filtered.length > limit"
-          class="gs-load-more"
-          @click="limit += 20"
-        >
-          再看 20 次考试
-        </button>
+        </details>
+        <div v-if="!directoryExams.length" class="xj-library-empty"><Search :size="30" /><h3>没有找到匹配的考试</h3><p>试试其他关键词，或清除筛选条件。</p><button class="j-text" @click="directoryQuery = ''; directoryTerm = '全部学期'; directoryType = '全部类型'">清除筛选</button></div>
+        <button v-if="directoryExams.length > limit" class="gs-load-more j-outline" @click="limit += 20">再看 20 场考试<ChevronDown :size="16" /></button>
       </div>
     </dialog>
     <dialog
