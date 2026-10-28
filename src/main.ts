@@ -25,3 +25,5 @@ try {
       : "light";
 } catch {}
 void loadGradebookFonts().then(() => createApp(Journey).mount("#app"));
+
+if(import.meta.env.VITE_LOCAL_APP==='true')void import('./mobile/runtime').then(m=>m.initNative());

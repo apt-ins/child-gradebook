@@ -4,6 +4,8 @@
 
 **使用 Docker 独立部署。** 以下截图及仓库内测试数据均为虚构示例，不含真实孩子资料。
 
+需要完全离线、仅保存在手机的版本，请看 [Android / iPhone 本地 App 说明](docs/MOBILE.md)。手机 App 与 Docker 服务分别保存数据，不会自动同步。
+
 ![学迹桌面预览](docs/screenshots/desktop.png)
 
 <details><summary>查看手机预览</summary>

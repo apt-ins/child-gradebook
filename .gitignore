@@ -17,3 +17,13 @@ playwright-report/
 .ha-backup-path
 
 artifacts/
+
+# Native app output and private signing material
+mobile/www/
+*.apk
+*.aab
+*.ipa
+*.jks
+*.keystore
+*.p12
+*.mobileprovision

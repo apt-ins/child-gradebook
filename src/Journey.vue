@@ -32,6 +32,7 @@ import {
   X,
 } from "lucide-vue-next";
 import ScrollHome from "./ScrollHome.vue";
+import {isLocalApp} from "./platform";
 import XuejiNav from "./XuejiNav.vue";
 import { MotionConfig } from "motion-v";
 import { Sun, Moon } from "lucide-vue-next";
@@ -178,13 +179,14 @@ const grades = [
         <div class="xj-skeleton"><i></i><i></i><i></i></div>
       </div>
       <AuthPanel
-        v-else-if="!signedIn"
+        v-else-if="!signedIn && !isLocalApp"
         :configured="configured"
         :unavailable="authUnavailable"
         :connection-error="authError"
         @authenticated="sync"
         @retry="sync"
       />
+      <main v-else-if="!signedIn" class="auth-page"><div class="auth-wrap"><h1>本机档案暂时无法打开</h1><p role="alert">{{ authError || '请稍后重试，原档案不会被清空。' }}</p><button class="j-button j-primary" @click="sync">重新读取档案</button></div></main>
       <template v-else>
         <XuejiNav
           :screen="screen"
@@ -227,7 +229,7 @@ const grades = [
               ><Settings2 :size="19" /></a
             ><button
               class="j-icon"
-              aria-label="退出登录"
+              v-if="!isLocalApp" aria-label="退出登录"
               :disabled="busy || savePending"
               @click="logout"
             >
@@ -996,6 +998,7 @@ const grades = [
                 </form>
                 <section class="j-backup-tools">
                   <h2>把记录，完整带走</h2>
+                  <p v-if="isLocalApp">档案仅保存在这台手机。请在卸载、清除应用数据或换机前导出完整备份。</p>
                   <p>成绩、排名、小记和照片，一起保存在完整备份中。</p>
                   <a
                     class="j-tool-action"
@@ -1047,7 +1050,7 @@ const grades = [
                   </p>
                 </section>
               </div>
-              <PasswordSettings v-if="!demo" />
+              <PasswordSettings v-if="!demo && !isLocalApp" />
             </section>
           </Transition>
         </main>

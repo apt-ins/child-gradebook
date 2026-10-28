@@ -18,3 +18,12 @@ playwright-report
 *.log
 
 artifacts/
+
+android/
+ios/
+mobile/
+artifacts/
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
